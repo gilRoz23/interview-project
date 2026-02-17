@@ -13,15 +13,8 @@
 
 ## What Is Missing
 
-- **Authentication/Authorization**: No seller identity -- any caller can create links and view stats. In production, this would require JWT/OAuth2 authentication tied to Fiverr seller accounts.
-- **Rate limiting**: No protection against abuse (e.g., a bot clicking links thousands of times). Would need Redis-based rate limiting per IP/session.
 - **URL validation**: Currently accepts any string as a target URL. Should validate that it's a well-formed URL pointing to a fiverr.com domain.
-- **Credit ledger service**: Credits are tracked per-click but there's no aggregated seller wallet/balance system. In production, this would be a separate microservice.
-- **Distributed short code generation**: Current approach (random + retry) works at low scale but could have collision issues at very high throughput. A distributed ID generator (e.g., Snowflake) would be needed at scale.
 - **Click deduplication**: Same user clicking multiple times is counted as multiple clicks. Would need session/IP-based deduplication.
-- **Custom short codes**: Sellers cannot choose their own vanity short codes.
-- **Link expiration**: Links never expire. Could add TTL support.
-- **Monitoring/metrics**: No Prometheus/Grafana integration for production observability.
 
 ## Database Justification: PostgreSQL
 
@@ -141,4 +134,24 @@ Build, run, and verify all endpoints work. Run all tests and confirm they pass.
 Suggest a more descriptive project name that reflects the Fiverr short links assignment.
 Then rename the directory, pom.xml artifactId/groupId/name, main class, test class,
 and all references. Verify tests still pass after renaming.
+```
+
+### Prompt 5: Edge Case Hardening
+
+```
+Review the current implementation for edge cases:
+- What happens if the database is down when a click comes in?
+- Can two concurrent POST /links requests for the same URL create duplicate entries?
+- What if the @Async thread pool is exhausted under high load?
+Suggest fixes and implement the critical ones.
+```
+
+### Prompt 6: API Contract Validation
+
+```
+Add input validation to POST /links:
+- targetUrl must be a valid URL format (starts with http:// or https://)
+- targetUrl must not exceed 2048 characters
+- Return clear 400 error messages for each validation failure
+Include tests for each validation rule.
 ```
