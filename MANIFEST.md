@@ -47,3 +47,98 @@ PostgreSQL was chosen because:
 | **Credit as BigDecimal** | `BigDecimal("0.05")` | `double` or `float` | Never use floating point for money. BigDecimal avoids rounding errors (e.g., 0.1 + 0.2 != 0.3 in floating point). |
 | **H2 for tests** | In-memory H2 database | Testcontainers with real PostgreSQL | H2 is faster to start and doesn't require Docker during test runs. Trade-off: minor SQL dialect differences (handled by using JPQL instead of native queries). |
 | **No Lombok** | Manual getters/setters | Lombok annotations | Avoids adding a dependency and keeps the code explicit. Trade-off: more boilerplate, but fully transparent. |
+
+## AI Prompts Used (Cursor IDE)
+
+The following prompts were used.
+
+### Prompt 1: Plan
+
+```
+I have a Spring Boot 3.5.0 project (Java 21) with PostgreSQL already connected
+and running. The project is at ~/fiverr-shortlinks-service.
+
+Here is the project structure:
+- Main class: src/main/java/com/interview/interview_project/FiverrShortlinksApplication.java
+- DB config: src/main/resources/application.properties (PostgreSQL on localhost:5432/interviewdb, user: admin, password: admin)
+- pom.xml already has: spring-boot-starter-web, spring-boot-starter-data-jpa, postgresql driver
+- Hibernate ddl-auto is set to "update" (auto-creates tables from @Entity classes)
+
+Here is my assignment:
+
+Fiverr wants to empower sellers to promote their work anywhere - whether it's a LinkedIn post,
+a tweet, Instagram bio, client email or a printed QR code. We want sellers to share their work
+everywhere their audience is, turning every impression into a potential lead and every click into
+Fiverr credits.
+
+However Fiverr URLs can be long, complex, and difficult to share or remember. To make sharing
+seamless, Fiverr is introducing Sharable Links - short, clean, trackable URLs that can point to
+any seller-owned page on Fiverr (a Gig, Profile, Portfolio item or other promotional destination).
+
+Core loop:
+- Generate: A seller generates a short link for their Gig.
+- Share: They post it on social media.
+- Reward: When someone clicks the link, Fiverr redirects them to the original page and rewards
+  the seller with $0.05 in Fiverr credits for each valid click.
+
+We need to design and implement the backend service that powers this experience. Choose the best
+DB for this mission.
+
+APIs:
+1. POST /links - Short Link Generation: Create an endpoint to accept a target URL and return a
+   unique short URL. If multiple requests are made to generate the same URL, the system must
+   return the existing URL.
+2. GET /:short_code - Redirection and Tracking: Clicking the short link must redirect to the
+   target URL. The $0.05 credit is awarded only for links that passed a fraud validation
+   (simulate with a function that takes 500ms to complete and returns true or false with 50%
+   probability).
+3. GET /stats - Global Analytics: Return a paginated list of all generated links. For each link,
+   create a grouped report of link performance that aggregates lifetime totals while maintaining
+   monthly stats.
+
+Verify endpoints manually with Postman. Handle edge cases (invalid inputs, missing parameters).
+Provide an automated test suite that covers core functionality. Include comprehensive README.md
+and MANIFEST.md.
+
+Analyze the requirements and create a detailed implementation plan before writing any code.
+Choose the best database and justify the decision.
+Include: data model, file structure, API design, key implementation details, and testing strategy.
+```
+
+### Prompt 2: Clarification Questions
+
+```
+Explain the plan to me simply:
+- Why PostgreSQL over other databases?
+- Why do we need findByTargetUrl() and findByShortCode()?
+- What happens when fraud validation returns false?
+```
+
+### Prompt 3: Implementation
+
+```
+Implement the plan as specified. Create all files:
+- JPA entities (Link, ClickEvent) with proper indexes and constraints
+- Repositories with custom queries for stats aggregation
+- Services: LinkService (idempotent creation, stats), ClickTrackingService (@Async click
+  processing), FraudValidationService (500ms, 50% probability)
+- DTOs for request/response objects
+- GlobalExceptionHandler for 400/404/500 errors
+- LinkController with all 3 endpoints: POST /links, GET /:shortCode, GET /stats
+- Enable @Async on the main application class
+- Add H2 test dependency and test application.properties
+- Write unit tests (LinkServiceTest, FraudValidationServiceTest) and integration tests
+  (LinkControllerIntegrationTest)
+- Write README.md (setup, architecture, testing, AI setup) and MANIFEST.md (what works,
+  what's missing, DB justification, trade-offs)
+
+Build, run, and verify all endpoints work. Run all tests and confirm they pass.
+```
+
+### Prompt 4: Project Naming
+
+```
+Suggest a more descriptive project name that reflects the Fiverr short links assignment.
+Then rename the directory, pom.xml artifactId/groupId/name, main class, test class,
+and all references. Verify tests still pass after renaming.
+```
